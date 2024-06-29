@@ -31,7 +31,7 @@ export async function POST(req:Request,res:Response){
                 topic
             }
         })
-        console.log("h1")
+    
         const {data} = await axios.post(`${process.env.API_URL}/api/questions` ,{
             amount,
             type,
@@ -39,46 +39,49 @@ export async function POST(req:Request,res:Response){
         })
         if(type ==='mcq'){
             type mcqQuestion ={
-                question:string,
+                questions:string,
                 answer:string,
                 option1:string,
                 option2:string,
                 option3:string,
             }
     
-            const manyData= data.questions.map(async (question: mcqQuestion) =>{
+            const manyData= data.questions.map((question: mcqQuestion) =>{
                 
                 const options=[question.answer,question.option1,question.option2,question.option3].sort(() => Math.random() -0.5)
-                await prisma.question.createMany({
-                    data: manyData,
-                })
-                
                 return{
-                    Question: question.question,
+                    question: question.questions,
                     answer:question.answer,
                     options:JSON.stringify(options),
                     gameId: game.id,
                     questionType:'mcq'
-                }
-            })
+                } 
+            });
+    
+            
+            await prisma.question.createMany({
+                data: manyData
+            });
+            
+          
         }
         else if(type==="open_ended"){
             type openQuestion={
                 question:string,
                 answer:string,
             }
-
-            let manyData = data.questions.map((question:openQuestion) => {
-                return{
-                    question:question.question,
-                    answer:question.answer,
-                    gameId:game.id,
-                    questionType: 'open_ended'
-                }
+            const manyData = data.questions.map((question: openQuestion) => {
+                return {
+                  question: question.question,
+                  answer: question.answer,
+                  gameId: game.id,
+                  questionType: "open_ended",
+            }});
+            
+           await prisma.question.createMany({
+            data: manyData
             })
-            await prisma.question.createMany({
-                data:manyData,
-            })
+            
         }
         
         return NextResponse.json({

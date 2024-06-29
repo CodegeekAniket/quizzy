@@ -44,8 +44,9 @@ export const POST = async (req: Request, res: Response) => {
             );
             
         }
+       
         return NextResponse.json({
-            questions,
+            questions:questions,
         },
         {
             status:200,
