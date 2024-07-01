@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { useForm} from 'react-hook-form';
 import { quizCreationSchema } from '@/schemas/form/quiz';
@@ -13,12 +13,17 @@ import { BookOpen, CopyCheck } from 'lucide-react';
 import { Separator } from './ui/separator';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import LoadingQuestions from './LoadingQuestions';
 
-type Props = {};
+type Props = {
+    topicParam:string
+};
 
 type Input = z.infer<typeof quizCreationSchema>
-const QuizCreation = (props: Props) => {
+const QuizCreation = ({topicParam}: Props) => {
     const router = useRouter();
+    const[showLoader,setShowLoader] = React.useState(false)
+    const[finished,setFinished] = React.useState(false)
     const {mutate: getQuestion , isPending} = useMutation({
         mutationFn: async ({amount,topic,type} : Input) =>{
             const response = await axios.post("/api/game", {
@@ -33,29 +38,39 @@ const QuizCreation = (props: Props) => {
         resolver: zodResolver(quizCreationSchema),
         defaultValues:{
             amount:3,
-            topic:"",
+            topic:topicParam,
             type:"open_ended",
         },
     });
 
     function onSubmit(input :Input){
+        setShowLoader(true)
         getQuestion({
             amount: input.amount,
             topic:input.topic,
             type:input.type,
         },{
             onSuccess :({gameId}) =>{
-                console.log(gameId)
-                if(form.getValues('type') == 'open_ended'){
+                setFinished(true)
+                setTimeout(() =>{
+                    if(form.getValues('type') == 'open_ended'){
                     router.push(`/play/open-ended/${gameId}`)
-                }
-                else{
+                    }
+                    else{
                     router.push(`/play/mcq/${gameId}`)
-                } 
+                    }
+                },1000)
+                 
+            },
+            onError:() =>{
+                setShowLoader(false)
             }
         })
     }
     form.watch();
+    if(showLoader){
+        return <LoadingQuestions finished={finished}/>
+    }
     return (
     <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
         <Card>
